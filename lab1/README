@@ -9,37 +9,82 @@ Question 1: Common Errors (20 points)
 --------------------------------------------------------------------------------
 1.1
 --------------------------------------------------------------------------------
-Issue: 
+Issue: pointers should be used after they are allocated
 
 Fix:
+
+void test1_fixed() {
+    int *a = (int *) malloc(sizeof (int)); // allocate memory for a pointer
+    *a = 3;
+    *a = *a + 2;
+    printf("%d\n", *a);
+}
 
 --------------------------------------------------------------------------------
 1.2
 --------------------------------------------------------------------------------
-Issue:
+Issue: pointers should be declared with a * before the name even if they are declared on the same line
 
 Fix:
+
+void test2_fixed() {
+    int *a, *b; // *name to declare a pointer
+    a = (int *) malloc(sizeof (int));
+    b = (int *) malloc(sizeof (int));
+
+    if (!(a && b)) {
+        printf("Out of memory\n");
+        exit(-1);
+    }
+    *a = 2;
+    *b = 3;
+}
 
 --------------------------------------------------------------------------------
 1.3
 --------------------------------------------------------------------------------
-Issue: 
+Issue: array should be allocated by multiplying the size of the type by the number of elements
 
 Fix:
+
+void test3_fixed() {
+    int i, *a = (int *) malloc(1000 * sizeof(int)); // multiply by sizeof(type)
+
+    if (!a) {
+        printf("Out of memory\n");
+        exit(-1);
+    }
+    for (i = 0; i < 1000; i++)
+        *(i + a) = i;
+}
 
 --------------------------------------------------------------------------------
 1.4
 --------------------------------------------------------------------------------
-Issue: 
+Issue: two dimensional array should be allocated row by row
 
 Fix:
+
+void test4_fixed() {
+    int **a = (int **) malloc(3 * sizeof (int *));
+    for (int i = 0; i < 3; i++)
+        a[i] = (int *) malloc(100 * sizeof(int)); // allocate memory for each row
+    a[1][1] = 5;
+}
 
 --------------------------------------------------------------------------------
 1.5
 --------------------------------------------------------------------------------
-Issue:
+Issue: scanf takes in the address of a variable
 
 Fix:
+
+void test5_fixed() {
+    int *a = (int *) malloc(sizeof (int));
+    scanf("%d", &a); // pass in the address of a
+    if (!a)
+        printf("Value is 0\n");
+}
 
 ================================================================================
 Question 2: Parallelization (30 points)
@@ -49,10 +94,30 @@ Question 2: Parallelization (30 points)
 2.1
 --------------------------------------------------------------------------------
 
+The first one, because array y_1 only relies on array x. So y_1 can be computed parallelly easily (each thread is computed independently).
+
+However, array y_2 relies on array x and array y_2 itself. So y_2 should be computed in some specific order. It is hard to parallelize.
+
 --------------------------------------------------------------------------------
 2.2
 --------------------------------------------------------------------------------
 
+y[n] = c * x[n] + (1 - c) * y[n - 1]
+
+Since c is close to 1, which means (1-c) is close to zero. Then we can expand this equation with y[n-1], or even y[n-2].
+
+Then y[n] = c * x[n] + (1 - c) * (c * x[n - 1] + (1 - c)y[n - 2])
+ ->  y[n] = c * x[n] + (1 - c) * (c * x[n - 1] + (1 - c)(c * x[n - 2] + (1 - c)y[n - 3]))
+
+(1 - c) ^ 2 is small enough to be ignored. So we can get the equation below.
+
+y[n] = c * x[n] + (1 - c) * c * x[n - 1]
+
+Which means y[n] only relies on x[n] and x[n - 1]. So y[n] can be computed parallelly.
+
 ================================================================================
 Question 3: Small-Kernel Convolution (50 points)
 ================================================================================
+
+autio-blur: 1024 threads, 8192 blocks, speedup: 17.3x
+noaudio-blur: 1024 threads, 8192 blocks, speedup: 23.4x
